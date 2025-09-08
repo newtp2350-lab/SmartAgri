@@ -6,6 +6,7 @@ import { LocationInput } from "@/components/LocationInput";
 import { ChatInterface } from "@/components/ChatInterface";
 import { AdvancedForm } from "@/components/AdvancedForm";
 import { RecommendationResults } from "@/components/RecommendationResults";
+import Layout from "@/components/Layout";
 import { 
   Sprout, 
   MessageSquare, 
@@ -143,7 +144,8 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <Layout location={location} onLocationChange={() => setLocation(null)}>
+      <div className="space-y-6">
       {/* Header */}
       <header className="bg-gradient-hero text-primary-foreground shadow-soft">
         <div className="container mx-auto px-4 py-6">
@@ -229,8 +231,9 @@ const Index = () => {
             This is a demo interface. For full functionality with real agricultural data, connect to Supabase backend.
           </p>
         </div>
-      </footer>
-    </div>
+        </div>
+      </div>
+    </Layout>
   );
 };
 
