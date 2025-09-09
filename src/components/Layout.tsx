@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, Outlet } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   Sprout,
+  Home,
   Cloud,
   TestTube,
   TrendingUp,
@@ -16,7 +17,8 @@ import {
   MapPin
 } from "lucide-react";
 
-const navigation = [
+export const navigation = [
+  { name: "Homepage", href: "/", icon: Home },
   { name: "Weather", href: "/weather", icon: Cloud },
   { name: "Soil Insights", href: "/soil", icon: TestTube },
   { name: "Market", href: "/market", icon: TrendingUp },
@@ -72,6 +74,9 @@ const Layout = ({ children, location, onLocationChange }: LayoutProps) => {
                   </Button>
                 </div>
               )}
+              <Link to="/login">
+                <Button variant="secondary" size="sm">Login</Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -119,7 +124,7 @@ const Layout = ({ children, location, onLocationChange }: LayoutProps) => {
 
         {/* Main Content */}
         <main className="flex-1 p-6 md:p-8">
-          {children}
+          {children ?? <Outlet />}
         </main>
       </div>
     </div>

@@ -6,7 +6,7 @@ import { LocationInput } from "@/components/LocationInput";
 import { ChatInterface } from "@/components/ChatInterface";
 import { AdvancedForm } from "@/components/AdvancedForm";
 import { RecommendationResults } from "@/components/RecommendationResults";
-import Layout from "@/components/Layout";
+import { navigation } from "@/components/Layout";
 import { 
   Sprout, 
   MessageSquare, 
@@ -85,6 +85,26 @@ const Index = () => {
               </p>
             </div>
             <LocationInput onLocationSet={handleLocationSet} />
+            {/* Quick navigation under the location box */}
+            <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
+              {navigation.map((item) => {
+                const Icon = item.icon as any;
+                return (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    className="group block rounded-xl border bg-card p-4 text-center hover:shadow-glow transition-all"
+                  >
+                    <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-hero text-primary-foreground">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="text-sm font-medium text-foreground group-hover:text-primary">
+                      {item.name}
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
           </div>
         </section>
 
@@ -144,32 +164,7 @@ const Index = () => {
   }
 
   return (
-    <Layout location={location} onLocationChange={() => setLocation(null)}>
-      <div className="space-y-6">
-      {/* Header */}
-      <header className="bg-gradient-hero text-primary-foreground shadow-soft">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Sprout className="w-8 h-8" />
-              <h1 className="text-2xl font-bold">SmartAgri Advisor</h1>
-            </div>
-            <div className="flex items-center gap-2 text-sm bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
-              <MapPin className="w-4 h-4" />
-              <span>{location.address}</span>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setLocation(null)}
-                className="text-primary-foreground hover:bg-white/20 ml-2"
-              >
-                Change
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div className="space-y-6">
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {recommendations ? (
@@ -231,9 +226,8 @@ const Index = () => {
             This is a demo interface. For full functionality with real agricultural data, connect to Supabase backend.
           </p>
         </div>
-        </div>
-      </div>
-    </Layout>
+      </footer>
+    </div>
   );
 };
 

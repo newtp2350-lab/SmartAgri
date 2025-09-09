@@ -11,7 +11,9 @@ import FarmHistory from "./pages/FarmHistory";
 import Alerts from "./pages/Alerts";
 import Community from "./pages/Community";
 import Settings from "./pages/Settings";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import Layout from "@/components/Layout";
 
 const queryClient = new QueryClient();
 
@@ -22,16 +24,19 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/weather" element={<Weather />} />
-          <Route path="/soil" element={<SoilInsights />} />
-          <Route path="/market" element={<Market />} />
-          <Route path="/history" element={<FarmHistory />} />
-          <Route path="/alerts" element={<Alerts />} />
-          <Route path="/community" element={<Community />} />
-          <Route path="/settings" element={<Settings />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
+          <Route element={<Layout />}> 
+            <Route path="/" element={<Index />} />
+            <Route path="/weather" element={<Weather />} />
+            <Route path="/soil" element={<SoilInsights />} />
+            <Route path="/market" element={<Market />} />
+            <Route path="/history" element={<FarmHistory />} />
+            <Route path="/alerts" element={<Alerts />} />
+            <Route path="/community" element={<Community />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/login" element={<Login />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Route>
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

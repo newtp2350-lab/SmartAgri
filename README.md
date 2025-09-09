@@ -60,6 +60,26 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Development
+
+1. Install dependencies
+```bash
+npm install
+```
+
+2. Create a `.env` file with API keys
+```bash
+VITE_SUPABASE_URL=your_url
+VITE_SUPABASE_ANON_KEY=your_anon_key
+VITE_OPENWEATHER_API_KEY=your_key
+VITE_AGMARKNET_BASE_URL=https://api.example.com/agmarknet
+```
+
+3. Start Dev Server
+```bash
+npm run dev
+```
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/ea2d9849-cd1f-4be9-8a25-e3235bd772d4) and click on Share -> Publish.
