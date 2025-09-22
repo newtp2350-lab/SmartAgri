@@ -1,0 +1,21 @@
+Crop,Season,Soil,Soil_pH,Rainfall,Temperature,WaterNeed,Fertilizer(NPK),Notes
+Wheat,Rabi,Loamy to clay loam,6.0-7.5,40-90 mm,10-25 °C,Medium,120:60:40,Sensitive to waterlogging; rotate with pulses
+Rice,Kharif,Clayey loam,5.5-7.0,120-150 mm+,20-30 °C,High,100:50:50,Needs standing water; good for high-rainfall areas
+Maize,Both,Sandy loam,5.5-7.5,50-100 mm,18-27 °C,Medium,120:60:40,Good short-duration crop; requires well-drained soil
+Cotton,Kharif,Sandy loam to black soil,6.0-8.0,50-100 mm,20-35 °C,High,150:75:75,Long-duration; sensitive to frost
+Chickpea,Rabi,Sandy loam,6.0-7.5,30-60 mm,10-25 °C,Low,20:60:40,Fixes nitrogen; good after cereals
+Groundnut,Kharif,Sandy loam,6.0-7.5,50-75 mm,20-30 °C,Medium,30:70:40 + gypsum,Requires light soil for pod development
+Sugarcane,Perennial,Clay loam,6.0-8.0,150-250 mm,20-35 °C,Very High,250:115:115,Heavy water feeder; irrigated regions
+Millet,Kharif,Sandy to loamy,5.5-7.0,25-50 mm,20-30 °C,Very Low,40:20:0,Excellent for arid zones
+Mustard,Rabi,Loamy to sandy loam,6.0-7.5,25-50 mm,10-25 °C,Low,80:40:40,Short duration; intercrop with wheat
+Soybean,Kharif,Loamy,6.0-7.5,60-100 mm,20-30 °C,Medium,20:60:40,Improves soil nitrogen; sensitive to waterlogging
+Barley,Rabi,Loamy,6.0-7.5,40-80 mm,8-25 °C,Medium,60:30:30,"Drought tolerant, low water crop"
+Jute,Kharif,Alluvial soil,6.4-7.2,150-200 mm,20-35 °C,High,80:40:40,Needs high rainfall and humidity
+Lentil,Rabi,Loam to clay loam,6.0-7.5,30-50 mm,8-25 °C,Low,25:40:20,Good for rotation; improves soil fertility
+Pea,Rabi,Loamy,6.0-7.5,30-60 mm,10-25 °C,Low,30:60:30,Cool season crop; high protein content
+Potato,Rabi,Sandy loam,5.5-7.0,50-120 mm,15-20 °C,Medium,120:100:100,Requires cool climate; sensitive to frost
+Onion,Both,Loamy,6.0-7.0,50-75 mm,13-25 °C,Medium,120:50:100,Requires well-drained soil
+Tomato,Both,Loamy,6.0-7.5,60-120 mm,20-27 °C,Medium,100:50:50,"Needs good irrigation, temperature sensitive"
+Banana,Perennial,"Alluvial, loamy",6.0-7.5,100-150 mm,20-35 °C,High,200:150:200,"Requires warm, humid climate"
+Apple,Rabi,Well-drained loam,5.5-6.5,100-125 mm,6-24 °C,Medium,60:40:80,Needs chilling hours; hilly areas
+Mango,Kharif,Well-drained loam,5.5-7.5,75-250 mm,24-30 °C,Medium,100:50:100,"Tropical fruit, drought tolerant"

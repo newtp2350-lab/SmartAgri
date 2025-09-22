@@ -7,14 +7,249 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
   }
   public: {
     Tables: {
-      [_ in never]: never
+      users: {
+        Row: {
+          user_id: number
+          name: string | null
+          phone_number: string | null
+          email: string | null
+          preferred_language: string | null
+          location_lat: number | null
+          location_lon: number | null
+          created_at: string | null
+        }
+        Insert: {
+          user_id?: number
+          name?: string | null
+          phone_number?: string | null
+          email?: string | null
+          preferred_language?: string | null
+          location_lat?: number | null
+          location_lon?: number | null
+          created_at?: string | null
+        }
+        Update: {
+          user_id?: number
+          name?: string | null
+          phone_number?: string | null
+          email?: string | null
+          preferred_language?: string | null
+          location_lat?: number | null
+          location_lon?: number | null
+          created_at?: string | null
+        }
+      }
+      locations: {
+        Row: {
+          location_id: number
+          state: string | null
+          district: string | null
+          city_or_market: string | null
+          latitude: number | null
+          longitude: number | null
+        }
+        Insert: {
+          location_id?: number
+          state?: string | null
+          district?: string | null
+          city_or_market?: string | null
+          latitude?: number | null
+          longitude?: number | null
+        }
+        Update: {
+          location_id?: number
+          state?: string | null
+          district?: string | null
+          city_or_market?: string | null
+          latitude?: number | null
+          longitude?: number | null
+        }
+      }
+      crops: {
+        Row: {
+          crop_id: number
+          crop_name: string
+          ideal_ph_min: number | null
+          ideal_ph_max: number | null
+          ideal_rainfall_min: number | null
+          ideal_rainfall_max: number | null
+          ideal_temp_min: number | null
+          ideal_temp_max: number | null
+          soil_type_suitability: string | null
+        }
+        Insert: {
+          crop_id?: number
+          crop_name: string
+          ideal_ph_min?: number | null
+          ideal_ph_max?: number | null
+          ideal_rainfall_min?: number | null
+          ideal_rainfall_max?: number | null
+          ideal_temp_min?: number | null
+          ideal_temp_max?: number | null
+          soil_type_suitability?: string | null
+        }
+        Update: {
+          crop_id?: number
+          crop_name?: string
+          ideal_ph_min?: number | null
+          ideal_ph_max?: number | null
+          ideal_rainfall_min?: number | null
+          ideal_rainfall_max?: number | null
+          ideal_temp_min?: number | null
+          ideal_temp_max?: number | null
+          soil_type_suitability?: string | null
+        }
+      }
+      soil_data: {
+        Row: {
+          soil_id: number
+          location_id: number | null
+          ph: number | null
+          organic_carbon: number | null
+          sand_percent: number | null
+          clay_percent: number | null
+          silt_percent: number | null
+          last_updated: string | null
+        }
+        Insert: {
+          soil_id?: number
+          location_id?: number | null
+          ph?: number | null
+          organic_carbon?: number | null
+          sand_percent?: number | null
+          clay_percent?: number | null
+          silt_percent?: number | null
+          last_updated?: string | null
+        }
+        Update: {
+          soil_id?: number
+          location_id?: number | null
+          ph?: number | null
+          organic_carbon?: number | null
+          sand_percent?: number | null
+          clay_percent?: number | null
+          silt_percent?: number | null
+          last_updated?: string | null
+        }
+      }
+      weather_data: {
+        Row: {
+          weather_id: number
+          location_id: number | null
+          temperature: number | null
+          rainfall: number | null
+          humidity: number | null
+          forecast_json: Json | null
+          last_updated: string | null
+        }
+        Insert: {
+          weather_id?: number
+          location_id?: number | null
+          temperature?: number | null
+          rainfall?: number | null
+          humidity?: number | null
+          forecast_json?: Json | null
+          last_updated?: string | null
+        }
+        Update: {
+          weather_id?: number
+          location_id?: number | null
+          temperature?: number | null
+          rainfall?: number | null
+          humidity?: number | null
+          forecast_json?: Json | null
+          last_updated?: string | null
+        }
+      }
+      market_prices: {
+        Row: {
+          market_price_id: number
+          crop_id: number | null
+          location_id: number | null
+          price: number | null
+          price_range_min: number | null
+          price_range_max: number | null
+          volume: number | null
+          last_updated: string | null
+        }
+        Insert: {
+          market_price_id?: number
+          crop_id?: number | null
+          location_id?: number | null
+          price?: number | null
+          price_range_min?: number | null
+          price_range_max?: number | null
+          volume?: number | null
+          last_updated?: string | null
+        }
+        Update: {
+          market_price_id?: number
+          crop_id?: number | null
+          location_id?: number | null
+          price?: number | null
+          price_range_min?: number | null
+          price_range_max?: number | null
+          volume?: number | null
+          last_updated?: string | null
+        }
+      }
+      suitability_scores: {
+        Row: {
+          score_id: number
+          user_id: number | null
+          crop_id: number | null
+          location_id: number | null
+          suitability_score: number | null
+          recommendation_reason: string | null
+          generated_at: string | null
+        }
+        Insert: {
+          score_id?: number
+          user_id?: number | null
+          crop_id?: number | null
+          location_id?: number | null
+          suitability_score?: number | null
+          recommendation_reason?: string | null
+          generated_at?: string | null
+        }
+        Update: {
+          score_id?: number
+          user_id?: number | null
+          crop_id?: number | null
+          location_id?: number | null
+          suitability_score?: number | null
+          recommendation_reason?: string | null
+          generated_at?: string | null
+        }
+      }
+      chat_history: {
+        Row: {
+          chat_id: number
+          user_id: number | null
+          query: string
+          response: string
+          timestamp: string | null
+        }
+        Insert: {
+          chat_id?: number
+          user_id?: number | null
+          query: string
+          response: string
+          timestamp?: string | null
+        }
+        Update: {
+          chat_id?: number
+          user_id?: number | null
+          query?: string
+          response?: string
+          timestamp?: string | null
+        }
+      }
     }
     Views: {
       [_ in never]: never

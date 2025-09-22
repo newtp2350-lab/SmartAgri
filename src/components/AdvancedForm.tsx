@@ -10,9 +10,10 @@ import { Calculator, TrendingUp, Leaf, DollarSign } from "lucide-react";
 interface AdvancedFormProps {
   location?: { lat: number; lng: number; address: string };
   onGenerateRecommendations: (data: any) => void;
+  loading?: boolean;
 }
 
-export const AdvancedForm = ({ location, onGenerateRecommendations }: AdvancedFormProps) => {
+export const AdvancedForm = ({ location, onGenerateRecommendations, loading }: AdvancedFormProps) => {
   const [formData, setFormData] = useState({
     landSize: "",
     soilType: "",
@@ -124,9 +125,9 @@ export const AdvancedForm = ({ location, onGenerateRecommendations }: AdvancedFo
             />
           </div>
 
-          <Button type="submit" variant="hero" size="lg" className="w-full">
-            <TrendingUp className="w-4 h-4" />
-            Generate Smart Recommendations
+          <Button type="submit" variant="hero" size="lg" className="w-full" disabled={!!loading}>
+            <TrendingUp className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Generating...' : 'Generate Smart Recommendations'}
           </Button>
         </form>
 

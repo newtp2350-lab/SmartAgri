@@ -10,7 +10,17 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+/.vite
 *.local
+/.cache
+
+# Env files
+.env
+.env.*
+
+# Ignore embedded datasets and repos
+public/knowledge/PlantDoc-Dataset/
+public/knowledge/plantdoc/
 
 # Editor directories and files
 .vscode/*

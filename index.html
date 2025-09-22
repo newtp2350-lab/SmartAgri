@@ -11,15 +11,25 @@
     <meta property="og:title" content="SmartAgri Advisor - AI-Powered Farming Intelligence" />
     <meta property="og:description" content="Get personalized crop recommendations, soil analysis, weather insights, and market information with AI-powered agricultural intelligence." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:image" content="/placeholder.svg" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:image" content="/placeholder.svg" />
+    <link rel="icon" href="/placeholder.svg" type="image/svg+xml" />
+    <link rel="shortcut icon" href="/placeholder.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/placeholder.svg" />
+
+    <meta name="supabase-url" content="https://qzaghvyknrkwyqnsuglv.supabase.co" />
+    <meta name="supabase-anon-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6YWdodnlrbnJrd3lxbnN1Z2x2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTczMjMyNzksImV4cCI6MjA3Mjg5OTI3OX0.bgOoQO9Jb2TypSJqXpjbSdbYbVbeUi3vSGsymQm6Fco" />
   </head>
 
   <body>
     <div id="root"></div>
+    <script>
+      // Runtime injection for Supabase config (fallback if Vite env not available)
+      window.__SUPABASE_URL = window.__SUPABASE_URL || (typeof importMeta !== 'undefined' && importMeta.env && importMeta.env.VITE_SUPABASE_URL) || undefined;
+      window.__SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY || (typeof importMeta !== 'undefined' && importMeta.env && importMeta.env.VITE_SUPABASE_ANON_KEY) || undefined;
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

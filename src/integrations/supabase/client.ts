@@ -2,16 +2,69 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const SUPABASE_URL = (import.meta as any)?.env?.VITE_SUPABASE_URL as string | undefined;
+const SUPABASE_PUBLISHABLE_KEY = (import.meta as any)?.env?.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
-  }
-});
+function readMeta(name: string): string | undefined {
+  if (typeof document === 'undefined') return undefined;
+  const el = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null;
+  return el?.content || undefined;
+}
+
+const runtimeUrl = (globalThis as any).__SUPABASE_URL || readMeta('supabase-url');
+const runtimeKey = (globalThis as any).__SUPABASE_ANON_KEY || readMeta('supabase-anon-key');
+
+const resolvedUrl = SUPABASE_URL || runtimeUrl;
+const resolvedKey = SUPABASE_PUBLISHABLE_KEY || runtimeKey;
+
+const missingConfig = !resolvedUrl || !resolvedKey;
+
+function createStubClient() {
+  console.error("Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env.");
+  const stub = {
+    auth: {
+      async getSession() {
+        return { data: { session: null }, error: null } as any;
+      },
+      onAuthStateChange(_cb: any) {
+        return { data: { subscription: { unsubscribe() {} } } } as any;
+      },
+      async signInWithOAuth() {
+        return { data: null, error: new Error('Supabase not configured') } as any;
+      },
+      async signInWithPassword() {
+        return { data: null, error: new Error('Supabase not configured') } as any;
+      },
+      async signUp() {
+        return { data: null, error: new Error('Supabase not configured') } as any;
+      },
+      async signOut() {
+        return { error: null } as any;
+      },
+    },
+    from() {
+      return {
+        select() { return { data: null, error: new Error('Supabase not configured') } as any; },
+        insert() { return { data: null, error: new Error('Supabase not configured') } as any; },
+        update() { return { data: null, error: new Error('Supabase not configured') } as any; },
+        eq() { return this; },
+        limit() { return this; },
+        maybeSingle() { return { data: null, error: new Error('Supabase not configured') } as any; },
+      } as any;
+    },
+  } as any;
+  return stub;
+}
+
+export const supabase = missingConfig
+  ? createStubClient()
+  : createClient<Database>(resolvedUrl!, resolvedKey!, {
+      auth: {
+        storage: localStorage,
+        persistSession: true,
+        autoRefreshToken: true,
+      }
+    });

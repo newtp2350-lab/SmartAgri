@@ -73,6 +73,8 @@ VITE_SUPABASE_URL=your_url
 VITE_SUPABASE_ANON_KEY=your_anon_key
 VITE_OPENWEATHER_API_KEY=your_key
 VITE_AGMARKNET_BASE_URL=https://api.example.com/agmarknet
+VITE_OPENCAGE_API_KEY=your_opencage_api_key
+VITE_OPENROUTER_API_KEY=your_openrouter_api_key
 ```
 
 3. Start Dev Server

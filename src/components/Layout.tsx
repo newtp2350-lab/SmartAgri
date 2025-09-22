@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ import {
   X,
   MapPin
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const navigation = [
   { name: "Homepage", href: "/", icon: Home },
@@ -36,7 +37,22 @@ interface LayoutProps {
 
 const Layout = ({ children, location, onLocationChange }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const currentLocation = useLocation();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setUserEmail(data.session?.user?.email ?? null);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUserEmail(session?.user?.email ?? null);
+    });
+    return () => { sub.subscription.unsubscribe(); };
+  }, []);
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -74,9 +90,16 @@ const Layout = ({ children, location, onLocationChange }: LayoutProps) => {
                   </Button>
                 </div>
               )}
-              <Link to="/login">
-                <Button variant="secondary" size="sm">Login</Button>
-              </Link>
+              {userEmail ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm hidden sm:inline">{userEmail}</span>
+                  <Button variant="secondary" size="sm" onClick={handleLogout}>Logout</Button>
+                </div>
+              ) : (
+                <Link to="/login">
+                  <Button variant="secondary" size="sm">Login</Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>

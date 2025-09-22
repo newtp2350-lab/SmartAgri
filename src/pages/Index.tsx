@@ -7,6 +7,10 @@ import { ChatInterface } from "@/components/ChatInterface";
 import { AdvancedForm } from "@/components/AdvancedForm";
 import { RecommendationResults } from "@/components/RecommendationResults";
 import { navigation } from "@/components/Layout";
+import { useLocation } from "@/hooks/use-location";
+import { WeatherService } from "@/services/WeatherService";
+import { fetchSoilData, interpretSoilTexture } from "@/api/soilgrids";
+import OpenRouterService from "@/services/OpenRouterService";
 import { 
   Sprout, 
   MessageSquare, 
@@ -17,24 +21,103 @@ import {
   TrendingUp,
   Wheat,
   Smartphone,
-  Brain
+  Brain,
+  ArrowLeft
 } from "lucide-react";
 import heroImage from "@/assets/hero-agriculture.jpg";
 
 const Index = () => {
-  const [location, setLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
+  const { location, updateLocation, clearLocation, isLoading: locationLoading } = useLocation();
   const [recommendations, setRecommendations] = useState<any>(null);
+  const [advLoading, setAdvLoading] = useState(false);
   const [currentTab, setCurrentTab] = useState("normal");
+  const [showLocationSelection, setShowLocationSelection] = useState(false);
 
   const handleLocationSet = (loc: { lat: number; lng: number; address: string }) => {
-    setLocation(loc);
+    updateLocation(loc);
+    setShowLocationSelection(false);
   };
 
-  const handleGenerateRecommendations = (data: any) => {
-    setRecommendations(data);
+  const handleGenerateRecommendations = async (data: any) => {
+    setAdvLoading(true);
+    try {
+      // Build profile baseline from user input
+      const contextString = `ADVANCED ANALYSIS\n` +
+        `Location: ${data?.location?.address || 'Unknown'} (lat=${data?.location?.lat}, lon=${data?.location?.lng})\n` +
+        `Land Size: ${data.landSize} acres\n` +
+        `Soil Type (user): ${data.soilType}\n` +
+        `Water Source: ${data.waterSource || 'Unknown'}\n` +
+        `Budget: ₹${data.budget || 'N/A'}\n` +
+        `Previous Crops: ${data.previousCrops || 'N/A'}\n` +
+        `Notes: ${data.additionalInfo || 'None'}\n`;
+
+      // Live enrich: Soil and Weather
+      let enrichments: string[] = [contextString];
+      try {
+        if (data?.location?.lat && data?.location?.lng) {
+          const [soil, weather] = await Promise.allSettled([
+            fetchSoilData(data.location.lat, data.location.lng),
+            WeatherService.getCurrent({ lat: data.location.lat, lng: data.location.lng })
+          ]);
+          if (soil.status === 'fulfilled') {
+            const s = soil.value;
+            (data as any).soil = s;
+            const texture = interpretSoilTexture(s.sandPercent, s.clayPercent, s.siltPercent);
+            enrichments.push(`Soil: pH=${s.ph ?? 'NA'}, OC=${s.organicCarbon ?? 'NA'}%, Texture=${texture}`);
+            localStorage.setItem('lastSoilSummary', enrichments[enrichments.length-1]);
+          }
+          if (weather.status === 'fulfilled') {
+            const w = weather.value;
+            (data as any).weather = w;
+            enrichments.push(`Weather Now: ${w.weather?.[0]?.main || ''} ${w.main?.temp ?? ''}C, Humidity ${w.main?.humidity ?? ''}%`);
+          }
+        }
+      } catch {}
+
+      // Try to enrich using last market context from storage
+      try {
+        const soilKey = data?.location?.address ? `bestCropsForLocation:${data.location.address}` : undefined;
+        const soilList = soilKey ? localStorage.getItem(soilKey) : null;
+        const soilSummary = localStorage.getItem('lastSoilSummary');
+        const marketSummary = localStorage.getItem('lastMarketSummary');
+        data._contextString = [...enrichments, soilSummary, marketSummary, soilList ? `Top Soil-Based Crops: ${JSON.parse(soilList).slice(0,5).join(', ')}` : '']
+          .filter(Boolean)
+          .join('\n');
+      } catch {}
+
+      setRecommendations(data);
+      // Pre-generate AI plan to ensure content appears (non-blocking UI already handles in component)
+      try {
+        await OpenRouterService.chat('summarize', { contextString: data._contextString });
+      } catch {}
+    } finally {
+      setAdvLoading(false);
+    }
   };
 
-  if (!location) {
+  const handleBackToLocationSelection = () => {
+    setShowLocationSelection(true);
+  };
+
+  const handleLocationReset = () => {
+    clearLocation();
+    setShowLocationSelection(false);
+    setRecommendations(null);
+  };
+
+  // Show loading spinner while location is being loaded
+  if (locationLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!location || showLocationSelection) {
     return (
       <div className="min-h-screen bg-background">
         {/* Hero Section */}
@@ -84,7 +167,21 @@ const Index = () => {
                 First, let us know your farm location to provide personalized recommendations
               </p>
             </div>
-            <LocationInput onLocationSet={handleLocationSet} />
+            <div className="space-y-4">
+              <LocationInput onLocationSet={handleLocationSet} />
+              {showLocationSelection && (
+                <div className="text-center">
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleLocationReset}
+                    className="flex items-center gap-2 mx-auto"
+                  >
+                    <MapPin className="w-4 h-4" />
+                    Reset Location
+                  </Button>
+                </div>
+              )}
+            </div>
             {/* Quick navigation under the location box */}
             <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
               {navigation.map((item) => {
@@ -165,6 +262,18 @@ const Index = () => {
 
   return (
     <div className="space-y-6">
+      {/* Back Button */}
+      <div className="container mx-auto px-4 pt-4">
+        <Button 
+          variant="outline" 
+          onClick={handleBackToLocationSelection}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Change Location
+        </Button>
+      </div>
+
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {recommendations ? (
@@ -212,7 +321,8 @@ const Index = () => {
               </div>
               <AdvancedForm 
                 location={location} 
-                onGenerateRecommendations={handleGenerateRecommendations} 
+                onGenerateRecommendations={handleGenerateRecommendations}
+                loading={advLoading}
               />
             </TabsContent>
           </Tabs>
