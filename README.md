@@ -81,19 +81,24 @@ SmartAgri is an intelligent agricultural platform that combines AI-powered plant
    ```
 
 3. **Environment Setup**
-   Create a `.env` file in the root directory:
+   Copy the example environment file and configure your API keys:
    ```bash
-   # Database
-   VITE_SUPABASE_URL=your_supabase_url
+   cp .env.example .env
+   ```
+   
+   Then edit `.env` with your actual API keys:
+   ```bash
+   # Database Configuration
+   VITE_SUPABASE_URL=your_supabase_project_url
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    
-   # APIs
+   # External API Keys
    VITE_OPENWEATHER_API_KEY=your_openweather_api_key
    VITE_OPENCAGE_API_KEY=your_opencage_api_key
    VITE_OPENROUTER_API_KEY=your_openrouter_api_key
-   VITE_AGMARKNET_BASE_URL=https://api.example.com/agmarknet
+   VITE_AGMARKNET_BASE_URL=your_agmarknet_api_url
    
-   # Plant Disease Detection Models
+   # AI Model URLs (Host your models on cloud storage)
    VITE_PLANTDOC_MODEL_URL=your_plantdoc_model_url
    VITE_PLANTDOC_LABELS_URL=your_plantdoc_labels_url
    VITE_PLANTVILLAGE_MODEL_URL=your_plantvillage_model_url
@@ -101,6 +106,8 @@ SmartAgri is an intelligent agricultural platform that combines AI-powered plant
    VITE_PLANTNET_MODEL_URL=your_plantnet_model_url
    VITE_PLANTNET_LABELS_URL=your_plantnet_labels_url
    ```
+
+   **⚠️ Security Note**: Never commit your `.env` file to version control. The `.gitignore` file already protects your API keys.
 
 4. **Start Development Server**
    ```bash
@@ -175,6 +182,26 @@ SmartAgri/
 - ESLint for code quality
 - Prettier for code formatting
 - Tailwind CSS for styling
+
+## 🔒 Security Guidelines
+
+### Environment Variables
+- **Never commit `.env` files** to version control
+- Use `.env.example` files for documentation
+- Rotate API keys regularly
+- Use environment-specific configurations
+
+### API Key Protection
+- Store sensitive keys in environment variables only
+- Use server-side proxies for sensitive API calls when possible
+- Implement rate limiting for public APIs
+- Monitor API usage for unusual activity
+
+### Data Privacy
+- All image processing happens client-side
+- No user data is stored without consent
+- Implement proper data retention policies
+- Use HTTPS for all external communications
 
 ## 🌐 Deployment
 
