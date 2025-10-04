@@ -26,3 +26,10 @@ dist-ssr
 # PlantDoc dataset directories (large files)
 public/knowledge/PlantDoc-Dataset/
 public/knowledge/plantdoc/
+
+# Python virtual environment and large ML files
+server/vision/.venv/
+server/vision/__pycache__/
+*.pyd
+*.dll
+*.lib
