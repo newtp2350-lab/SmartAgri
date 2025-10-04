@@ -17,6 +17,9 @@ import {
   Filter
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { WeatherService } from '@/services/WeatherService';
+import { MarketService, getStateAndMarket } from '@/services/MarketService';
+import OpenRouterService from '@/services/OpenRouterService';
 
 interface AlertsComponentProps {
   location?: { lat: number; lng: number; address: string };
@@ -33,11 +36,36 @@ export const AlertsComponent = forwardRef<AlertsComponentRef, AlertsComponentPro
   const [filter, setFilter] = useState<'all' | 'unread' | 'weather' | 'market' | 'pest'>('all');
 
   useEffect(() => {
+    // Prefer AI alerts from this session if available
+    const source = sessionStorage.getItem('alerts_source');
+    const aiJson = sessionStorage.getItem('ai_alerts');
+    if (source === 'ai' && aiJson) {
+      try {
+        const ai = JSON.parse(aiJson);
+        if (Array.isArray(ai)) {
+          setAlerts(ai as AlertType[]);
+          setIsLoading(false);
+          // Still fetch farms in background for labels
+          DatabaseService.getCurrentUser().then(async (user) => {
+            if (user) {
+              const farmsData = await DatabaseService.getFarms(user.id);
+              setFarms(farmsData);
+            }
+          });
+          return;
+        }
+      } catch {}
+    }
     loadAlerts();
   }, []);
 
   useImperativeHandle(ref, () => ({
-    refreshAlerts: loadAlerts
+    refreshAlerts: async () => {
+      const ok = await aiRefreshAlerts();
+      if (!ok) {
+        await loadAlerts();
+      }
+    }
   }));
 
   const loadAlerts = async () => {
@@ -56,6 +84,7 @@ export const AlertsComponent = forwardRef<AlertsComponentRef, AlertsComponentPro
 
       setAlerts(alertsData);
       setFarms(farmsData);
+      try { sessionStorage.setItem('alerts_source', 'db'); sessionStorage.setItem('db_alerts', JSON.stringify(alertsData)); } catch {}
 
       // If no alerts exist, create some sample alerts for demonstration
       if (alertsData.length === 0 && farmsData.length > 0) {
@@ -99,6 +128,90 @@ export const AlertsComponent = forwardRef<AlertsComponentRef, AlertsComponentPro
       toast.error('Failed to load alerts');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // AI-backed refresh to synthesize severe alerts from current context
+  const aiRefreshAlerts = async (): Promise<boolean> => {
+    try {
+      setIsLoading(true);
+      const user = await DatabaseService.getCurrentUser();
+      if (!user) {
+        toast.error('Please log in to view alerts');
+        return false;
+      }
+
+      const contextLines: string[] = [];
+      if (location?.address) {
+        contextLines.push(`Location: ${location.address} (${location.lat?.toFixed(4)}, ${location.lng?.toFixed(4)})`);
+      }
+
+      try {
+        const [weather, forecast] = await Promise.allSettled([
+          location ? WeatherService.getCurrent(location) : Promise.resolve(null),
+          location ? WeatherService.getHourlyForecast(location) : Promise.resolve(null)
+        ]);
+        if (weather.status === 'fulfilled' && weather.value) {
+          const w: any = weather.value;
+          contextLines.push(`WeatherNow: temp ${w.main?.temp ?? '-'}°C, humidity ${w.main?.humidity ?? '-'}%, cond ${w.weather?.[0]?.description ?? '-'}`);
+        }
+        if (forecast.status === 'fulfilled' && (forecast.value as any)?.list?.length) {
+          const f: any = forecast.value;
+          const next = f.list.slice(0, 6).map((h: any) => `${new Date(h.dt*1000).getHours()}:00 ${h.main.temp.toFixed(0)}°C ${Math.round((h.pop||0)*100)}%rain`).join('; ');
+          contextLines.push(`ForecastNext18h: ${next}`);
+        }
+      } catch {}
+
+      try {
+        if (location?.address) {
+          const lm = getStateAndMarket(location.address);
+          if (lm?.state && lm.market) {
+            const prices: any = await MarketService.getMarketPricesForLocation(['Wheat','Rice','Sugarcane','Cotton','Mustard','Groundnut','Maize','Sorghum'], location.address);
+            const oneLine = Object.entries(prices || {}).slice(0,4).map(([c, arr]: any) => `${c}:${arr?.[0]?.modelPrice||arr?.[0]?.price||'-'}`).join(', ');
+            contextLines.push(`MarketSample: ${oneLine}`);
+          }
+        }
+      } catch {}
+
+      const system = 'You are an agricultural alerting assistant. Generate only critical alerts that a farmer should act on now.';
+      const prompt = `From the following context, output the TOP 3 severe alerts as strict JSON.\nContext:\n${contextLines.join('\n')}\n\nRules:\n- Allowed types: \"weather\" | \"market\" | \"pest\".\n- Severity only: \"high\" | \"medium\".\n- Messages must be concise and actionable (1-2 lines).\nOutput JSON ONLY:\n{\"alerts\": [{\"type\": \"weather|market|pest\", \"title\": string, \"message\": string, \"severity\": \"high|medium\"}]}`;
+
+      const text = await OpenRouterService.chat(prompt, { contextString: system });
+      let parsed: any = null;
+      try { parsed = JSON.parse(text as string); } catch {}
+      if (!parsed) {
+        const match = String(text).match(/[\{\[][\s\S]*[\}\]]/);
+        if (match) {
+          try { parsed = JSON.parse(match[0]); } catch {}
+        }
+      }
+      if (!parsed || !Array.isArray(parsed.alerts)) {
+        return false;
+      }
+
+      const mapped: AlertType[] = parsed.alerts.slice(0, 3).map((a: any, idx: number) => ({
+        id: `ai-${Date.now()}-${idx}`,
+        user_id: user.id,
+        type: (a.type === 'weather' || a.type === 'market' || a.type === 'pest') ? a.type : 'weather',
+        title: a.title || 'Alert',
+        message: a.message || '',
+        read: false,
+        created_at: new Date().toISOString()
+      }));
+
+      setAlerts(mapped);
+      try {
+        sessionStorage.setItem('alerts_source', 'ai');
+        sessionStorage.setItem('ai_alerts', JSON.stringify(mapped));
+        sessionStorage.setItem('ai_alerts_ts', String(Date.now()));
+      } catch {}
+      setIsLoading(false);
+      toast.success('Alerts updated');
+      return true;
+    } catch (e) {
+      console.warn('AI alerts refresh failed:', e);
+      setIsLoading(false);
+      return false;
     }
   };
 

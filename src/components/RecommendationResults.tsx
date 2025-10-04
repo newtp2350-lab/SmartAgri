@@ -149,6 +149,11 @@ export const RecommendationResults = ({ data }: RecommendationResultsProps) => {
     run();
   }, [data]);
 
+  // Clean AI Farm Plan formatting: remove markdown-only symbols (#, *) just for this section
+  const cleanedPlan = (aiPlan || '')
+    .replace(/[#*]+/g, '')
+    .trim();
+
   // Helper: enrich recommendations with market prices
   async function enrichWithMarketPrices(items: Rec[]): Promise<Rec[]> {
     // Approximate yields per acre (quintals) and a simple profit factor
@@ -275,7 +280,7 @@ export const RecommendationResults = ({ data }: RecommendationResultsProps) => {
         </CardHeader>
         <CardContent>
           <div className="text-sm whitespace-pre-line">
-            {loading ? 'Generating plan...' : (aiPlan || 'No plan generated.')}
+            {loading ? 'Generating plan...' : (cleanedPlan || 'No plan generated.')}
           </div>
         </CardContent>
       </Card>
@@ -366,19 +371,7 @@ export const RecommendationResults = ({ data }: RecommendationResultsProps) => {
         )}
       </div>
 
-      <Card className="bg-accent/10 border-accent/30 shadow-soft">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-accent mt-0.5" />
-            <div>
-              <h4 className="font-medium text-foreground">Important Note</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                These are demo recommendations. For actual agricultural advice, this platform would integrate with real-time soil, weather, and market data APIs through Supabase backend integration.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Important Note card removed per design request */}
     </div>
   );
 };

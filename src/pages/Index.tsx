@@ -329,14 +329,7 @@ const Index = () => {
         )}
       </main>
 
-      {/* Footer Note */}
-      <footer className="bg-muted/30 border-t border-border mt-20">
-        <div className="container mx-auto px-4 py-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            This is a demo interface. For full functionality with real agricultural data, connect to Supabase backend.
-          </p>
-        </div>
-      </footer>
+      {/* Footer removed per design request */}
     </div>
   );
 };

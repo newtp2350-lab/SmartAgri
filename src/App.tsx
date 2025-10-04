@@ -50,6 +50,7 @@ const App = () => {
               <Route path="/alerts" element={<Alerts />} />
               <Route path="/community" element={<Community />} />
               <Route path="/settings" element={<Settings />} />
+              
               <Route path="/login" element={<Login />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

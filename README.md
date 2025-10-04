@@ -75,6 +75,14 @@ VITE_OPENWEATHER_API_KEY=your_key
 VITE_AGMARKNET_BASE_URL=https://api.example.com/agmarknet
 VITE_OPENCAGE_API_KEY=your_opencage_api_key
 VITE_OPENROUTER_API_KEY=your_openrouter_api_key
+
+# Plant Disease Detection Models
+VITE_PLANTDOC_MODEL_URL=your_plantdoc_model_url
+VITE_PLANTDOC_LABELS_URL=your_plantdoc_labels_url
+VITE_PLANTVILLAGE_MODEL_URL=your_plantvillage_model_url
+VITE_PLANTVILLAGE_LABELS_URL=your_plantvillage_labels_url
+VITE_PLANTNET_MODEL_URL=your_plantnet_model_url
+VITE_PLANTNET_LABELS_URL=your_plantnet_labels_url
 ```
 
 3. Start Dev Server

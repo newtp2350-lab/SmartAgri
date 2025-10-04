@@ -12,6 +12,8 @@ import { WeatherService } from "@/services/WeatherService";
 import { fetchSoilData, interpretSoilPH, interpretOrganicCarbon, interpretSoilTexture } from "@/api/soilgrids";
 import { MarketService, getStateAndMarket } from "@/services/MarketService";
 import { DatabaseService } from "@/services/DatabaseService";
+import { predictFromImageElement, predictFromImageElementByType } from "@/services/plantModel";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import SpeechToTextButton from "./SpeechToTextButton";
 
 interface Message {
@@ -32,41 +34,17 @@ export const ChatInterface = ({ location }: ChatInterfaceProps) => {
   const [lastLocation, setLastLocation] = useState<string | null>(null);
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [modelType, setModelType] = useState<'plantdoc' | 'plantvillage' | 'plantnet'>('plantdoc');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const autoScrollRef = useRef<boolean>(true);
-  const SESSION_KEY = 'smartagri_chat_session';
 
-  // Load chat history on component mount (prefer sessionStorage, fallback to DB)
+  // Load chat history on component mount
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(SESSION_KEY);
-      if (raw) {
-        const saved = JSON.parse(raw) as any[];
-        if (Array.isArray(saved) && saved.length > 0) {
-          const restored: Message[] = saved.map((m: any) => ({
-            ...m,
-            timestamp: new Date(m.timestamp),
-          }));
-          setMessages(restored);
-          return; // Use session history; skip DB load
-        }
-      }
-    } catch {}
     loadChatHistory();
   }, []);
-
-  // Persist chat history to sessionStorage whenever messages change
-  useEffect(() => {
-    try {
-      const serializable = messages.map(m => ({
-        ...m,
-        timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp,
-      }));
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(serializable));
-    } catch {}
-  }, [messages]);
 
   // Auto-scroll to bottom when messages change (only if user is near bottom)
   useEffect(() => {
@@ -85,7 +63,9 @@ export const ChatInterface = ({ location }: ChatInterfaceProps) => {
         setMessages([{
           id: '1',
           type: 'assistant',
-          content: `Hello! I'm your SmartAgri Advisor. I can help you with crop recommendations, soil analysis, weather insights, and market information. ${location ? `I see you're located at ${location.address}.` : 'Please set your location first.'} What would you like to know about farming today?`,
+          content: `Hello! I'm your SmartAgri Advisor. I can help you with crop recommendations, soil analysis, weather insights, market information, and plant disease detection. ${location ? `I see you're located at ${location.address}.` : 'Please set your location first.'}
+
+What would you like to know about farming today?`,
           timestamp: new Date(),
         }]);
         return;
@@ -112,7 +92,9 @@ export const ChatInterface = ({ location }: ChatInterfaceProps) => {
         setMessages([{
           id: '1',
           type: 'assistant',
-          content: `Hello! I'm your SmartAgri Advisor. I can help you with crop recommendations, soil analysis, weather insights, and market information. ${location ? `I see you're located at ${location.address}.` : 'Please set your location first.'} What would you like to know about farming today?`,
+          content: `Hello! I'm your SmartAgri Advisor. I can help you with crop recommendations, soil analysis, weather insights, market information, and plant disease detection. ${location ? `I see you're located at ${location.address}.` : 'Please set your location first.'}
+
+What would you like to know about farming today?`,
           timestamp: new Date(),
         }]);
       }
@@ -122,7 +104,9 @@ export const ChatInterface = ({ location }: ChatInterfaceProps) => {
       setMessages([{
         id: '1',
         type: 'assistant',
-        content: `Hello! I'm your SmartAgri Advisor. I can help you with crop recommendations, soil analysis, weather insights, and market information. ${location ? `I see you're located at ${location.address}.` : 'Please set your location first.'} What would you like to know about farming today?`,
+        content: `Hello! I'm your SmartAgri Advisor. I can help you with crop recommendations, soil analysis, weather insights, market information, and plant disease detection. ${location ? `I see you're located at ${location.address}.` : 'Please set your location first.'}
+
+What would you like to know about farming today?`,
         timestamp: new Date(),
       }]);
     } finally {
@@ -141,7 +125,11 @@ export const ChatInterface = ({ location }: ChatInterfaceProps) => {
         if (updated.length > 0 && updated[0].type === 'assistant') {
           updated[0] = {
             ...updated[0],
-            content: `Hello! I'm your SmartAgri Advisor. I can help you with crop recommendations, soil analysis, weather insights, and market information. I see you're located at ${location.address}. What would you like to know about farming today?`
+            content: `Hello! I'm your SmartAgri Advisor. I can help you with crop recommendations, soil analysis, weather insights, market information, and plant disease detection. I see you're located at ${location.address}. 
+
+🌱 **New Feature**: You can now upload plant images for instant AI-powered disease detection! Just click the image button to upload a photo of a plant leaf.
+
+What would you like to know about farming today?`
           };
         }
         return updated;
@@ -172,8 +160,7 @@ export const ChatInterface = ({ location }: ChatInterfaceProps) => {
     */
     const el = e.currentTarget;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    // Only auto-scroll when the user is essentially at the bottom
-    autoScrollRef.current = distanceFromBottom < 10;
+    autoScrollRef.current = distanceFromBottom < 80; // enable auto-scroll if close to bottom
   };
 
   // Placeholder function for loading older messages (disabled)
@@ -191,11 +178,132 @@ export const ChatInterface = ({ location }: ChatInterfaceProps) => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // For now, just note the attachment in the message box
-    setInputMessage(prev => `${prev}${prev ? ' ' : ''}[Image: ${file.name}]`);
+
+    setIsAnalyzingImage(true);
+    
+    try {
+      // Create image element for analysis
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      
+      img.onload = async () => {
+        try {
+          // Create a user message showing the image was uploaded (shown first)
+          const userMsg: Message = {
+            id: `user-${Date.now()}`,
+            type: 'user',
+            content: `📷 Uploaded plant image (${modelType}): ${file.name}`,
+            timestamp: new Date(),
+          };
+          
+          setMessages(prev => [...prev, userMsg]);
+
+          // Run plant disease detection using selected model
+          const prediction = await predictFromImageElementByType(modelType, img);
+
+          // Ask the AI assistant for disease overview, remedies, fertilizers, and pesticides
+          const disease = prediction.label;
+
+          // Build rich farm context to pass to the AI
+          let ctx: any = { detectedDisease: disease, modelType };
+          try {
+            if (location) {
+              const [weather, forecast, soil] = await Promise.allSettled([
+                WeatherService.getCurrent(location),
+                WeatherService.getHourlyForecast(location),
+                fetchSoilData(location.lat, location.lng),
+              ]);
+
+              const weatherData = weather.status === 'fulfilled' ? weather.value : null;
+              const forecastData = forecast.status === 'fulfilled' ? forecast.value : null;
+              const soilData = soil.status === 'fulfilled' ? soil.value : null;
+
+              let contextString = `FARM DATA SUMMARY (for disease advice)\n`;
+              contextString += `Location: ${location.address} (${location.lat.toFixed(4)}, ${location.lng.toFixed(4)})\n`;
+              if (weatherData) {
+                contextString += `Weather: ${weatherData.main?.temp ? weatherData.main.temp.toFixed(1) + '°C' : 'n/a'}, ${weatherData.weather?.[0]?.description || 'n/a'}, humidity ${weatherData.main?.humidity ?? 'n/a'}%\n`;
+              }
+              if (soilData && typeof soilData.ph === 'number') {
+                contextString += `Soil: pH ${soilData.ph.toFixed(1)}, OC ${typeof soilData.organicCarbon === 'number' ? soilData.organicCarbon.toFixed(1) + '%' : 'n/a'}, texture ${soilData.texture || 'n/a'}\n`;
+              }
+
+              ctx = { ...ctx, location, weather: weatherData, forecast: forecastData, soil: soilData, contextString };
+            }
+          } catch (e) {
+            // proceed without extra context on failure
+          }
+
+          const prompt = `You are an agricultural expert.\nDetected plant disease: ${disease}.\nUse the provided farm context if any to localize timing and practicality.\nProvide a concise, actionable guide with these sections:\n- Overview (1-2 lines)\n- Key symptoms to confirm\n- Immediate actions farmers can take\n- Organic/Bio controls (names and how to apply)\n- Chemical control (active ingredients + safe usage; give 2-3 options)\n- Recommended fertilizers or nutrition plan to support recovery (NPK or micronutrients if relevant)\n- Preventive practices (hygiene, spacing, resistant varieties)\nFormat as clear bullet points. Avoid confidence/probability. Keep it practical.`;
+
+          let details = '';
+          try {
+            details = await OpenRouterService.chat(prompt, ctx);
+          } catch (e) {
+            details = `**Detected Condition:** ${disease}\n\nI couldn't fetch detailed guidance right now. Please ensure internet connectivity and try again, or ask for remedies for ${disease}.`;
+          }
+
+          const responseMsg: Message = {
+            id: `analysis-${Date.now()}`,
+            type: 'assistant',
+            content: `🌱 **Plant Disease Analysis**\n\n**Detected Condition:** ${disease}\n\n${details}`,
+            timestamp: new Date(),
+          };
+
+          setMessages(prev => [...prev, responseMsg]);
+          
+        } catch (error) {
+          console.error('Plant disease detection error:', error);
+          
+          // Create more specific error message based on error type
+          let errorMessage = `I encountered an error while analyzing your plant image. `;
+          
+          if (error instanceof Error) {
+            if (error.message.includes('Model loading failed')) {
+              errorMessage += `The AI model is currently unavailable. Please try again later or ask me about plant diseases in text.`;
+            } else if (error.message.includes('inputShape') || error.message.includes('batchInputShape')) {
+              errorMessage += `There's an issue with the AI model configuration. Please contact support or ask me about plant diseases in text.`;
+            } else if (error.message.includes('network') || error.message.includes('fetch')) {
+              errorMessage += `There's a network issue. Please check your internet connection and try again.`;
+            } else {
+              errorMessage += `Please try uploading a clearer image or ask me about plant diseases in text.`;
+            }
+          } else {
+            errorMessage += `Please try uploading a clearer image or ask me about plant diseases in text.`;
+          }
+          
+          // Add error message
+          const errorMsg: Message = {
+            id: `error-${Date.now()}`,
+            type: 'assistant',
+            content: errorMessage,
+            timestamp: new Date(),
+          };
+          
+          setMessages(prev => [...prev, errorMsg]);
+        } finally {
+          setIsAnalyzingImage(false);
+        }
+      };
+
+      img.onerror = () => {
+        setIsAnalyzingImage(false);
+        const errorMsg: Message = {
+          id: `error-${Date.now()}`,
+          type: 'assistant',
+          content: `Failed to load the image. Please try uploading a different image file.`,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, errorMsg]);
+      };
+      
+    } catch (error) {
+      console.error('File processing error:', error);
+      setIsAnalyzingImage(false);
+    }
+    
     // Reset value so selecting the same file again triggers change
     e.currentTarget.value = "";
   };
@@ -319,7 +427,11 @@ export const ChatInterface = ({ location }: ChatInterfaceProps) => {
           } else {
             contextString += `💰 MARKET PRICES: Data unavailable\n\n`;
           }
-          // Keep context raw; no structured output rules. The assistant behavior is governed by the system prompt.
+          // Output rules for the AI to ensure ordering and clarity
+          contextString += `📋 OUTPUT RULES:\n`;
+          contextString += `• When recommending crops, RANK from most suitable to least suitable for THIS location.\n`;
+          contextString += `• Use a numbered list and include one-line reasons tied to soil/weather/market.\n`;
+          contextString += `• Prefer crops matching pH, texture, OC; then check temperature/humidity/rain; then profitability.\n\n`;
           
           context = {
             location,
@@ -397,7 +509,11 @@ export const ChatInterface = ({ location }: ChatInterfaceProps) => {
             } else {
               contextString += `💰 MARKET PRICES: Data unavailable\n\n`;
             }
-            // Keep context raw; no structured output rules. The assistant behavior is governed by the system prompt.
+            // Output rules for the AI to ensure ordering and clarity
+            contextString += `📋 OUTPUT RULES:\n`;
+            contextString += `• When recommending crops, RANK from most suitable to least suitable for THIS location.\n`;
+            contextString += `• Use a numbered list and include one-line reasons tied to soil/weather/market.\n`;
+            contextString += `• Prefer crops matching pH, texture, OC; then check temperature/humidity/rain; then profitability.\n\n`;
             
             context = {
               location,
@@ -519,14 +635,13 @@ export const ChatInterface = ({ location }: ChatInterfaceProps) => {
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-secondary text-secondary-foreground'
                   }`}>
-                    {message.type === 'assistant' && typingMessageId === message.id ? (
+                    {message.type === 'assistant' ? (
                       <StreamedText
                         text={message.content}
                         className="text-sm"
                         onProgress={() => {
                           if (autoScrollRef.current) {
-                            // During streaming, use instant scroll so user can interrupt by scrolling away
-                            messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+                            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
                           }
                         }}
                         onDone={() => {
@@ -557,6 +672,23 @@ export const ChatInterface = ({ location }: ChatInterfaceProps) => {
                 </div>
               </div>
             )}
+            {isAnalyzingImage && (
+              <div className="flex gap-3 justify-start">
+                <div className="w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
+                  <ImageIcon className="w-4 h-4" />
+                </div>
+                <div className="bg-secondary text-secondary-foreground rounded-lg p-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                    <span className="text-sm">Analyzing plant image...</span>
+                  </div>
+                </div>
+              </div>
+            )}
             {typingMessageId && (
               <div className="text-xs text-muted-foreground pl-11">AI is typing…</div>
             )}
@@ -578,16 +710,35 @@ export const ChatInterface = ({ location }: ChatInterfaceProps) => {
             />
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
             <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handleFileChange} className="hidden" />
+            {/* Themed model selector */}
+            <div className="min-w-[160px]">
+              <Select
+                value={modelType}
+                onValueChange={(v) => setModelType(v as 'plantdoc' | 'plantvillage' | 'plantnet')}
+                disabled={isAnalyzingImage || isLoading}
+              >
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Select model" />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectItem value="plantdoc">PlantDoc</SelectItem>
+                  <SelectItem value="plantvillage">PlantVillage</SelectItem>
+                  <SelectItem value="plantnet">PlantNet</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <Popover>
               <PopoverTrigger asChild>
-                <Button type="button" disabled={isLoading} variant="hero" title="Attach image" aria-label="Attach image">
+                <Button type="button" disabled={isLoading || isAnalyzingImage} variant="hero" title="Attach image" aria-label="Attach image">
                   <ImageIcon className="w-4 h-4" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-40 p-2">
                 <button
                   type="button"
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground"
+                  disabled={isAnalyzingImage}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => cameraInputRef.current?.click()}
                 >
                   <Camera className="w-4 h-4" />
@@ -595,7 +746,8 @@ export const ChatInterface = ({ location }: ChatInterfaceProps) => {
                 </button>
                 <button
                   type="button"
-                  className="w-full mt-1 flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground"
+                  disabled={isAnalyzingImage}
+                  className="w-full mt-1 flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <ImageIcon className="w-4 h-4" />
