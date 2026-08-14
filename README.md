@@ -259,5 +259,3 @@ For support, email support@smartagri.com or create an issue on GitHub.
 - [ ] Farmer community features
 
 ---
-
-**Built with ❤️ for the agricultural community**
